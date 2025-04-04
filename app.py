@@ -4,6 +4,47 @@ import numpy as np
 import plotly.express as px
 import matplotlib.pyplot as plt
 
+# Agregamos CSS personalizado para mejorar el diseño
+st.markdown("""
+    <style>
+    /* Fondo y tipografía general */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333333;
+    }
+    /* Fondo de la barra lateral */
+    .css-1d391kg {
+        background-color: #f0f2f6;
+    }
+    /* Títulos y subtítulos */
+    h1, h2, h3, h4, h5, h6 {
+        color: #1F3A93;
+    }
+    /* Estilos para botones de descarga */
+    .stButton>button {
+        background-color: #1F3A93;
+        color: white;
+        border-radius: 8px;
+        padding: 10px 20px;
+        border: none;
+        font-weight: bold;
+    }
+    /* Estilos para los checkbox */
+    .stCheckbox>div {
+        background-color: #e8ebf0;
+        padding: 8px;
+        border-radius: 5px;
+    }
+    /* Líneas divisorias */
+    hr {
+        border: 0;
+        height: 1px;
+        background: #cccccc;
+        margin: 20px 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Configuración inicial de la página
 st.set_page_config(
     page_title="Portafolio de Finanzas Cuantitativas",
@@ -11,9 +52,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Función principal que maneja la navegación
+# Función principal para la navegación
 def main():
-    # Barra lateral para la navegación
     st.sidebar.title("Navegación")
     menu = st.sidebar.radio("Ir a", ["Inicio", "Proyectos", "Visualizaciones", "CV y Contacto"])
     
@@ -29,6 +69,7 @@ def main():
 # Sección de Introducción y Perfil Profesional
 def mostrar_inicio():
     st.title("Bienvenido a mi Portafolio en Finanzas Cuantitativas")
+    st.markdown("<hr>", unsafe_allow_html=True)
     st.write("""
     **Resumen Personal:**  
     Soy un profesional en finanzas cuantitativas con experiencia en análisis de datos, optimización de portafolios, 
@@ -44,7 +85,7 @@ def mostrar_inicio():
     - Simulaciones Monte Carlo
     - Visualización interactiva con Plotly y Matplotlib
     """)
-    
+
 # Sección de Proyectos Destacados
 def mostrar_proyectos():
     st.title("Proyectos Destacados")
@@ -54,9 +95,7 @@ def mostrar_proyectos():
     st.write("""
     En este proyecto se analizan series temporales y se implementan modelos predictivos para estimar precios de activos.
     """)
-    # Aquí puedes incluir gráficos, tablas o enlaces al código del proyecto
     if st.checkbox("Ver ejemplo de análisis"):
-        # Ejemplo interactivo o visualización
         df = pd.DataFrame({
             'Fecha': pd.date_range(start="2022-01-01", periods=100, freq='D'),
             'Precio': np.random.randn(100).cumsum() + 100
@@ -69,7 +108,6 @@ def mostrar_proyectos():
     Proyecto donde se aplican técnicas de optimización para la asignación de activos utilizando modelos matemáticos.
     """)
     if st.checkbox("Ver ejemplo de optimización"):
-        # Ejemplo de optimización: se podría mostrar una simulación o gráfico interactivo
         st.write("Aquí se mostrarían los resultados y visualizaciones del proceso de optimización.")
     
     # Proyecto 3: Backtesting de Estrategias de Trading
@@ -80,31 +118,29 @@ def mostrar_proyectos():
     if st.checkbox("Ver ejemplo de backtesting"):
         st.write("Código y visualizaciones del proceso de backtesting.")
     
-    # Sección adicional: Integración con APIs de datos financieros
+    # Proyecto 4: Integración con APIs
     st.subheader("Integración con APIs")
     st.write("""
     Ejemplos de cómo se pueden integrar datos en tiempo real utilizando APIs como Alpha Vantage o Yahoo Finance.
     """)
     st.write("Puedes incluir enlaces a repositorios o demostraciones en vivo.")
 
-# Sección de Visualizaciones y Reportes Interactivos
+# Sección de Visualizaciones Interactivas
 def mostrar_visualizaciones():
     st.title("Visualizaciones Interactivas")
     
-    st.write("A continuación, un ejemplo de visualización interactiva usando Plotly:")
-    # Ejemplo de visualización interactiva con Plotly
+    st.write("Ejemplo de visualización interactiva con Plotly:")
     df = pd.DataFrame({
         'x': np.random.randn(100),
         'y': np.random.randn(100)
     })
-    fig = px.scatter(df, x='x', y='y', title="Ejemplo de Visualización con Plotly")
+    fig = px.scatter(df, x='x', y='y', title="Visualización con Plotly")
     st.plotly_chart(fig, use_container_width=True)
     
     st.write("Ejemplo de gráfico con Matplotlib:")
-    # Ejemplo de visualización con Matplotlib
     fig2, ax = plt.subplots()
     ax.plot(np.random.randn(100))
-    ax.set_title("Ejemplo de Gráfico con Matplotlib")
+    ax.set_title("Gráfico con Matplotlib")
     st.pyplot(fig2)
 
 # Sección de CV y Datos de Contacto
@@ -114,13 +150,12 @@ def mostrar_cv_contacto():
     st.subheader("Contacto")
     st.write("""
     Puedes contactarme a través de:
-    - Correo: tuemail@dominio.com
-    - LinkedIn: [Perfil LinkedIn](https://www.linkedin.com/)
-    - GitHub: [Repositorio GitHub](https://github.com/)
+    - **Correo:** tuemail@dominio.com
+    - **LinkedIn:** [Perfil LinkedIn](https://www.linkedin.com/)
+    - **GitHub:** [Repositorio GitHub](https://github.com/)
     """)
     
     st.subheader("Descargar CV")
-    # Suponiendo que tienes un archivo CV.pdf en la misma carpeta
     try:
         with open("CV.pdf", "rb") as cv_file:
             st.download_button(
