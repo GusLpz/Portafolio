@@ -15,14 +15,14 @@ st.sidebar.title("Analizador de Portafolios de Inversion")
 tab1, tab2 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio"])
 
 # Entrada de simbolos y pesos 
-simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL,MSFT,GOOG, AMZN, NIKE")
+simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL, MSFT, GOOG, AMZN, NIKE")
 pesos = st.sidebar.text_input("Ingrese los pesos de las acciones (separados por comas)", "0.2,0.2,0.2,0.2,0.2")
 
 simbolos = [s.strip().upper() for s in simbolos.split(",")]
 pesos = [float(p) for p in pesos.split(",")]    
 
 # Seleccion de benchmark
-benchmark_options = { "S&P 500": "^GSPC", "NASDAQ": "^IXIC", "Dow Jones": "^DJI", "Russell 2K": "^RUT", "FTSE 100": "^FTSE", "DAX": "^GDAXI", "Nikkei 225": "^N225", "Hang Seng": "^HSI"}
+benchmark_options = { "S&P 500": "GSPC", "NASDAQ": "IXIC", "Dow Jones": "DJI", "Russell 2K": "RUT", "FTSE 100": "FTSE", "DAX": "GDAXI", "Nikkei 225": "N225", "Hang Seng": "HSI"}
 
 selected_benchmark = st.sidebar.selectbox("Seleccione un benchmark", list(benchmark_options.keys()))
 
@@ -84,10 +84,9 @@ else:
 # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
 
 with tab1:
+
     st.header("Analisis individual del Activo")
-
     selected_asset = st.selectbox("Seleccione un activo", simbolos)
-
     col1, col2 = st.columns(2)
     
     col1.metric("Rendimiento Acumulado (%)", f"{returns_acumulados[selected_asset].iloc[-1] * 100:.2f}%")
