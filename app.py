@@ -52,8 +52,8 @@ def calcular_metricas(data):
     """Calcula los rendimientos diarios y acumulados de los precios ajustados."""
     returns = data.pct_change().dropna()
     returns_acumulados = (1 + returns).cumprod() - 1
-    normalized_prices = data / data.iloc[0] * 100
-    return returns, returns_acumulados, normalized_prices
+    #normalized_prices = data / data.iloc[0] * 100
+    return returns, returns_acumulado
 
 def calcular_rendimiento_portafolio(returns, pesos):
     
@@ -78,7 +78,7 @@ else:
 
     all_symbols = simbolos + [benchmark_options[selected_benchmark]]
     data_stocks = obtener_datos(all_symbols, start_date, end_date)
-    returns, returns_acumulados, normalized_prices = calcular_metricas(data_stocks)
+    returns, returns_acumulados = calcular_metricas(data_stocks)
 
 
 # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
