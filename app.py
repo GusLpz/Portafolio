@@ -86,9 +86,9 @@ with tab1:
 
     selected_asset = st.selectbox("Seleccione un activo", simbolos)
 
-    metricas_selected_asset = calcular_metricas(data_stocks["Close"][selected_asset])
+    Rend_Total = calcular_metricas(data_stocks[selected_asset])[1]
 
     col1, col2 = st.columns(2)
 
-    col1.metrics("Rendimiento Total", f"{metricas_selected_asset[1]}")
+    col1.metrics("Rendimiento Total", f"{Rend_Total.iloc[-1]:.2%}")
     col2.metric("Rendimiento Diario Promedio", f"{metricas_selected_asset[0].mean()}")
