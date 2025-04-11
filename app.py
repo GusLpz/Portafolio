@@ -1,171 +1,94 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
-import numpy as np
+import plotly.graph_objects as go
 import plotly.express as px
-import matplotlib.pyplot as plt
+import numpy as np
+from datetime import datetime, timedelta
 
-# Agregamos CSS personalizado para mejorar el diseño
-st.markdown("""
-    <style>
-    /* Fondo y tipografía general */
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #333333;
-    }
-    /* Fondo de la barra lateral */
-    .css-1d391kg {
-        background-color: #f0f2f6;
-    }
-    /* Títulos y subtítulos */
-    h1, h2, h3, h4, h5, h6 {
-        color: #1F3A93;
-    }
-    /* Estilos para botones de descarga */
-    .stButton>button {
-        background-color: #1F3A93;
-        color: white;
-        border-radius: 8px;
-        padding: 10px 20px;
-        border: none;
-        font-weight: bold;
-    }
-    /* Estilos para los checkbox */
-    .stCheckbox>div {
-        background-color: #e8ebf0;
-        padding: 8px;
-        border-radius: 5px;
-    }
-    /* Líneas divisorias */
-    hr {
-        border: 0;
-        height: 1px;
-        background: #cccccc;
-        margin: 20px 0;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
-# Configuración inicial de la página
-st.set_page_config(
-    page_title="Portafolio de Finanzas Cuantitativas",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Configiracion de la pagina
+st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
+st.sidebar.title("Analizador de Portafolios de Inversion")
 
-# Función principal para la navegación
-def main():
-    st.sidebar.title("Navegación")
-    menu = st.sidebar.radio("Ir a", ["Inicio", "Proyectos", "Visualizaciones", "CV y Contacto"])
-    
-    if menu == "Inicio":
-        mostrar_inicio()
-    elif menu == "Proyectos":
-        mostrar_proyectos()
-    elif menu == "Visualizaciones":
-        mostrar_visualizaciones()
-    elif menu == "CV y Contacto":
-        mostrar_cv_contacto()
+# Creamos pestañas para la aplicacion
+tab1, tab2 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio"])
 
-# Sección de Introducción y Perfil Profesional
-def mostrar_inicio():
-    st.title("Bienvenido a mi Portafolio en Finanzas Cuantitativas")
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.write("""
-    **Resumen Personal:**  
-    Soy un profesional en finanzas cuantitativas con experiencia en análisis de datos, optimización de portafolios, 
-    backtesting de estrategias y modelado predictivo. Mi objetivo es aplicar métodos cuantitativos para resolver 
-    problemas financieros complejos y generar valor en entornos de alta competitividad.
-    """)
-    st.subheader("Habilidades y Tecnologías")
-    st.write("""
-    - Python (Pandas, NumPy, Scikit-learn)
-    - Análisis de Series Temporales
-    - Machine Learning y Deep Learning
-    - Optimización de Cartera
-    - Simulaciones Monte Carlo
-    - Visualización interactiva con Plotly y Matplotlib
-    """)
+# Entrada de simbolos y pesos 
+simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL,MSFT,GOOGL, AMZN, NIKE")
+pesos = st.sidebar.text_input("Ingrese los pesos de las acciones (separados por comas)", "0.2,0.2,0.2,0.2,0.2")
 
-# Sección de Proyectos Destacados
-def mostrar_proyectos():
-    st.title("Proyectos Destacados")
-    
-    # Proyecto 1: Análisis de Datos Financieros
-    st.subheader("Análisis de Datos Financieros")
-    st.write("""
-    En este proyecto se analizan series temporales y se implementan modelos predictivos para estimar precios de activos.
-    """)
-    if st.checkbox("Ver ejemplo de análisis"):
-        df = pd.DataFrame({
-            'Fecha': pd.date_range(start="2022-01-01", periods=100, freq='D'),
-            'Precio': np.random.randn(100).cumsum() + 100
-        })
-        st.line_chart(df.set_index('Fecha'))
-    
-    # Proyecto 2: Optimización de Portafolios
-    st.subheader("Optimización de Portafolios")
-    st.write("""
-    Proyecto donde se aplican técnicas de optimización para la asignación de activos utilizando modelos matemáticos.
-    """)
-    if st.checkbox("Ver ejemplo de optimización"):
-        st.write("Aquí se mostrarían los resultados y visualizaciones del proceso de optimización.")
-    
-    # Proyecto 3: Backtesting de Estrategias de Trading
-    st.subheader("Backtesting de Estrategias")
-    st.write("""
-    Implementación y evaluación de estrategias de trading cuantitativo mediante backtesting histórico.
-    """)
-    if st.checkbox("Ver ejemplo de backtesting"):
-        st.write("Código y visualizaciones del proceso de backtesting.")
-    
-    # Proyecto 4: Integración con APIs
-    st.subheader("Integración con APIs")
-    st.write("""
-    Ejemplos de cómo se pueden integrar datos en tiempo real utilizando APIs como Alpha Vantage o Yahoo Finance.
-    """)
-    st.write("Puedes incluir enlaces a repositorios o demostraciones en vivo.")
+simbolos = [s.strip().upper() for s in simbolos.split(",")]
+pesos = [float(p) for p in pesos.split(",")]    
 
-# Sección de Visualizaciones Interactivas
-def mostrar_visualizaciones():
-    st.title("Visualizaciones Interactivas")
-    
-    st.write("Ejemplo de visualización interactiva con Plotly:")
-    df = pd.DataFrame({
-        'x': np.random.randn(100),
-        'y': np.random.randn(100)
-    })
-    fig = px.scatter(df, x='x', y='y', title="Visualización con Plotly")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.write("Ejemplo de gráfico con Matplotlib:")
-    fig2, ax = plt.subplots()
-    ax.plot(np.random.randn(100))
-    ax.set_title("Gráfico con Matplotlib")
-    st.pyplot(fig2)
+# Seleccion de benchmark
+benchmark_options = { "S&P 500": "^GSPC", "NASDAQ": "^IXIC", "Dow Jones": "^DJI", "Russell 2K": "^RUT", "FTSE 100": "^FTSE", "DAX": "^GDAXI", "Nikkei 225": "^N225", "Hang Seng": "^HSI"}
 
-# Sección de CV y Datos de Contacto
-def mostrar_cv_contacto():
-    st.title("CV y Contacto")
-    
-    st.subheader("Contacto")
-    st.write("""
-    Puedes contactarme a través de:
-    - **Correo:** tuemail@dominio.com
-    - **LinkedIn:** [Perfil LinkedIn](https://www.linkedin.com/)
-    - **GitHub:** [Repositorio GitHub](https://github.com/)
-    """)
-    
-    st.subheader("Descargar CV")
-    try:
-        with open("CV.pdf", "rb") as cv_file:
-            st.download_button(
-                label="Descargar CV",
-                data=cv_file,
-                file_name="CV.pdf",
-                mime="application/pdf"
-            )
-    except FileNotFoundError:
-        st.error("CV.pdf no encontrado. Asegúrate de tener el archivo en el directorio del proyecto.")
+selected_benchmark = st.sidebar.selectbox("Seleccione un benchmark", list(benchmark_options.keys()))
 
-if __name__ == "__main__":
-    main()
+#Periodo de tiempo
+end_date = datetime.now()
+start_date_options = { 
+
+    "1 mes": end_date - timedelta(days=30),
+    "3 meses": end_date - timedelta(days=90),
+    "6 meses": end_date - timedelta(days=180),
+    "1 año": end_date - timedelta(days=365),
+    "2 años": end_date - timedelta(days=365*2),
+    "5 años": end_date - timedelta(days=365*5),
+    "10 años": end_date - timedelta(days=365*10) }
+
+selected_timeframe = st.sidebar.selectbox("Seleccione el periodo de tiempo", list(start_date_options.keys()))
+start_date = start_date_options[selected_timeframe]
+
+# FUNCIONES AUXILIARES
+
+def obtener_datos(simbolos, start_date, end_date):
+    """Obtiene los datos de precios ajustados de los simbolos especificados entre las fechas dadas."""
+    data = yf.download(simbolos, start=start_date, end=end_date)["Close"]
+    return data.ffill().dropna()
+
+def calcular_metricas(data):
+    """Calcula los rendimientos diarios y acumulados de los precios ajustados."""
+    returns = data.pct_change().dropna()
+    returns_acumulados = (1 + returns).cumprod() - 1
+    normalized_prices = data / data.iloc[0] * 100
+    return returns, returns_acumulados, normalized_prices
+
+def calcular_rendimiento_portafolio(returns, pesos):
+    
+    portafolio_returns = (returns * pesos).sum(axis=1)
+    return portafolio_returns
+
+def Calcular_Var(returns, confidence_level=0.95):
+    """Calcula el VaR del portafolio."""
+    var = np.percentile(returns, (1 - confidence_level) * 100)
+    return var
+def Calcular_CVaR(returns, var):
+    """Calcula el CVaR del portafolio."""
+    cvar = returns[returns <= var].mean()
+    return cvar
+
+if len(simbolos) != len(pesos):
+    st.sidebar.error("El número de símbolos y pesos no coincide. Por favor, verifique los datos ingresados.")
+else:
+
+    # Descarga de datos
+
+    all_symbols = simbolos + [benchmark_options[selected_benchmark]]
+    data_stocks = obtener_datos(all_symbols, start_date, end_date)
+
+
+# TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
+
+with tab1:
+    st.header("Analisis individual del Activo")
+
+    selected_asset = st.selectbox("Seleccione un activo", simbolos)
+
+    metricas_selected_asset = calcular_metricas(data_stocks[selected_asset])
+
+    col1, col2 = st.columns(2)
+
+    col1.metrics("Rendimiento Total", f"{metricas_selected_asset[1]}")
+    col2.metric("Rendimiento Diario Promedio", f"{metricas_selected_asset[0].mean()}")
