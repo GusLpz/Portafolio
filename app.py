@@ -69,7 +69,8 @@ def Calcular_CVaR(returns, var):
     cvar = returns[returns <= var].mean()
     return cvar
 
-if len(simbolos) != len(pesos):
+if len(simbolos) != len(pesos) or abs(sum(pesos) - 1) > 1e-6:
+    # Mensaje de error si los simbolos y pesos no coinciden
     st.sidebar.error("El número de símbolos y pesos no coincide. Por favor, verifique los datos ingresados.")
 else:
 
@@ -77,6 +78,7 @@ else:
 
     all_symbols = simbolos + [benchmark_options[selected_benchmark]]
     data_stocks = obtener_datos(all_symbols, start_date, end_date)
+    returns, returns_acumulados, normalized_prices = calcular_metricas(data_stocks)
 
 
 # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
@@ -87,5 +89,5 @@ with tab1:
     selected_asset = st.selectbox("Seleccione un activo", simbolos)
 
     col1, col2 = st.columns(2)
-
-    col1.metric(label="Precio Actual", value=data_stocks[selected_asset].iloc[-1], delta=data_stocks[selected_asset].iloc[-1] - data_stocks[selected_asset].iloc[-2])
+    
+    col1.metric("Rendimiento Acumulado (%)", f"{returns_acumulados[selected_asset].iloc[-1] * 100:.2f}%")
