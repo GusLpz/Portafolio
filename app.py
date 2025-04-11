@@ -15,7 +15,7 @@ st.sidebar.title("Analizador de Portafolios de Inversion")
 tab1, tab2 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio"])
 
 # Entrada de simbolos y pesos 
-simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL,MSFT,GOOGL, AMZN, NIKE")
+simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL,MSFT,GOOG, AMZN, NIKE")
 pesos = st.sidebar.text_input("Ingrese los pesos de las acciones (separados por comas)", "0.2,0.2,0.2,0.2,0.2")
 
 simbolos = [s.strip().upper() for s in simbolos.split(",")]
@@ -86,9 +86,6 @@ with tab1:
 
     selected_asset = st.selectbox("Seleccione un activo", simbolos)
 
-    Rend_Total = calcular_metricas(data_stocks[selected_asset])[1]
-
     col1, col2 = st.columns(2)
 
-    col1.metrics("Rendimiento Total", f"{Rend_Total.iloc[-1]:.2%}")
-    col2.metric("Rendimiento Diario Promedio", f"{metricas_selected_asset[0].mean()}")
+    col1.metric(label="Precio Actual", value=data_stocks[selected_asset].iloc[-1], delta=data_stocks[selected_asset].iloc[-1] - data_stocks[selected_asset].iloc[-2])
