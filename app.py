@@ -86,7 +86,7 @@ with tab1:
 
     selected_asset = st.selectbox("Seleccione un activo", simbolos)
 
-    metricas_selected_asset = calcular_metricas(data_stocks[selected_asset])
+    metricas_selected_asset = calcular_metricas(data_stocks["Close"][selected_asset])
 
     col1, col2 = st.columns(2)
 
