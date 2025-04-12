@@ -145,5 +145,5 @@ else:
         st.plotly_chart(fig, use_container_width=True)
 
         st.subheader("📊 Histograma de Retornos Diarios")
-        fig_hist = px.histogram(rendimientos, nbins=50, title=f"Distribución de Retornos Diarios de {selected_asset}")
+        fig_hist = px.histogram(rendimientos, nbins=20, title=f"Distribución de Retornos Diarios de {selected_asset}")
         st.plotly_chart(fig_hist, use_container_width=True)
