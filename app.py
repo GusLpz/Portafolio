@@ -201,8 +201,8 @@ else:
         # === Gráfico 2: Histograma de retornos
         with col_fig2:
             fig_hist = go.Figure()
-            fig_hist.add_trace(go.Histogram(x=rendimientos, name=selected_asset, opacity=0.6, color='royalblue'))
-            fig_hist.add_trace(go.Histogram(x=benchmark_returns, name=selected_benchmark, opacity=0.6, color='firebrick'))
+            fig_hist.add_trace(go.Histogram(x=rendimientos, name=selected_asset, opacity=0.6))
+            fig_hist.add_trace(go.Histogram(x=benchmark_returns, name=selected_benchmark, opacity=0.6))
             fig_hist.update_layout(barmode='overlay',
                                 title=f"Distribución de Retornos Diarios: {selected_asset} vs {selected_benchmark}",
                                 xaxis_title="Retorno Diario", yaxis_title="Frecuencia",
