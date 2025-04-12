@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="Inspector de Chichis", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Análisis de Inversones", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
