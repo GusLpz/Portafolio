@@ -178,10 +178,27 @@ else:
         # ================================
         # 4️⃣ GRÁFICOS INTERACTIVOS
         # ================================
-        st.subheader("📈 Evolución de Precios Normalizados")
-        fig = px.line(precios_norm[selected_asset], title=f"Precio Normalizado de {selected_asset}")
+        benchmark_symbol = benchmark_options[selected_benchmark]
+        benchmark_norm = precios_norm[benchmark_symbol]
+        benchmark_returns = returns[benchmark_symbol]
+
+        # === Evolución de precios normalizados
+        st.subheader("📈 Comparación de Precios Normalizados")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=precios_norm.index, y=precios_norm[selected_asset], 
+                                name=selected_asset, line=dict(color='royalblue')))
+        fig.add_trace(go.Scatter(x=benchmark_norm.index, y=benchmark_norm, 
+                                name=selected_benchmark, line=dict(color='firebrick')))
+        fig.update_layout(title=f"{selected_asset} vs {selected_benchmark} - Precio Normalizado",
+                        xaxis_title="Fecha", yaxis_title="Precio Indexado (100)")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("📊 Histograma de Retornos Diarios")
-        fig_hist = px.histogram(rendimientos, nbins=20, title=f"Distribución de Retornos Diarios de {selected_asset}")
+        # === Histograma de retornos
+        st.subheader("📊 Distribución de Retornos Diarios vs Benchmark")
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Histogram(x=rendimientos, name=selected_asset, opacity=0.6))
+        fig_hist.add_trace(go.Histogram(x=benchmark_returns, name=selected_benchmark, opacity=0.6))
+        fig_hist.update_layout(barmode='overlay',
+                            title=f"Distribución de Retornos Diarios: {selected_asset} vs {selected_benchmark}",
+                            xaxis_title="Retorno Diario", yaxis_title="Frecuencia")
         st.plotly_chart(fig_hist, use_container_width=True)
