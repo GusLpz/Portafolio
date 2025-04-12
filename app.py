@@ -178,6 +178,8 @@ else:
         # ================================
         # 4️⃣ GRÁFICOS INTERACTIVOS
         # ================================
+
+        st.subheader("📊 Comparaciones Visuales: Activo vs Benchmark")
         benchmark_symbol = benchmark_options[selected_benchmark]
         benchmark_norm = precios_norm[benchmark_symbol]
         benchmark_returns = returns[benchmark_symbol]
