@@ -88,14 +88,62 @@ else:
 
 
     # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
-
     with tab1:
-        st.header("Analisis individual del Activo")
-        selected_asset = st.selectbox("Seleccione un activo", simbolos)
-        
-        # Opción 1: desempaquetar
-        col1, = st.columns(1)  
-        col1.metric(
-            "Rendimiento Acumulado (%)", 
-            f"{returns_acumulados[selected_asset].iloc[-1] * 100:.2f}%"
-        )
+        st.header("📊 Análisis Individual del Activo")
+
+        selected_asset = st.selectbox("Seleccione un activo para analizar", simbolos)
+
+        # Extraemos series de tiempo específicas del activo
+        precios = data_stocks[selected_asset]
+        rendimientos = returns[selected_asset]
+        rend_acumulado = returns_acumulados[selected_asset]
+
+        # ================================
+        # 1️⃣ RESUMEN GENERAL DE RENDIMIENTO
+        # ================================
+        st.subheader("🔹 Resumen de Rendimiento")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Rendimiento Acumulado (%)", f"{rend_acumulado.iloc[-1] * 100:.2f}%")
+        col2.metric("Media de Retornos Diarios (%)", f"{rendimientos.mean() * 100:.4f}%")
+        col3.metric("Volatilidad Anualizada (%)", f"{rendimientos.std() * np.sqrt(252) * 100:.2f}%")
+
+        # ================================
+        # 2️⃣ INDICADORES DE RIESGO
+        # ================================
+        st.subheader("🔸 Indicadores de Riesgo")
+        sharpe = rendimientos.mean() / rendimientos.std()
+        sortino = rendimientos.mean() / rendimientos[rendimientos < 0].std()
+        var_95 = Calcular_Var(rendimientos)
+        cvar_95 = Calcular_CVaR(rendimientos, var_95)
+        max_drawdown = (rend_acumulado.cummax() - rend_acumulado).max()
+
+        col4, col5, col6 = st.columns(3)
+        col4.metric("Sharpe Ratio", f"{sharpe:.2f}")
+        col5.metric("Sortino Ratio", f"{sortino:.2f}")
+        col6.metric("Max Drawdown (%)", f"{max_drawdown * 100:.2f}%")
+
+        col7, col8 = st.columns(2)
+        col7.metric("VaR 95% (%)", f"{var_95 * 100:.2f}%")
+        col8.metric("CVaR 95% (%)", f"{cvar_95 * 100:.2f}%")
+
+        # ================================
+        # 3️⃣ ESTADÍSTICAS AVANZADAS
+        # ================================
+        st.subheader("📐 Estadísticas de Retornos")
+        skewness = rendimientos.skew()
+        kurtosis = rendimientos.kurtosis()
+
+        col9, col10 = st.columns(2)
+        col9.metric("Skewness", f"{skewness:.3f}")
+        col10.metric("Curtosis", f"{kurtosis:.3f}")
+
+        # ================================
+        # 4️⃣ GRÁFICOS INTERACTIVOS
+        # ================================
+        st.subheader("📈 Evolución de Precios Normalizados")
+        fig = px.line(precios_norm[selected_asset], title=f"Precio Normalizado de {selected_asset}")
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("📊 Histograma de Retornos Diarios")
+        fig_hist = px.histogram(rendimientos, nbins=50, title=f"Distribución de Retornos Diarios de {selected_asset}")
+        st.plotly_chart(fig_hist, use_container_width=True)
