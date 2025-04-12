@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Investment Analisys", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
@@ -153,9 +153,10 @@ else:
         sortino = rendimientos.mean() / rendimientos[rendimientos < 0].std()
         var_95 = Calcular_Var(rendimientos)
         cvar_95 = Calcular_CVaR(rendimientos, var_95)
+
         max_drawdown = (rend_acumulado.cummax() - rend_acumulado).max()
 
-        col4, col5, col6 = st.columns(3)
+        col4, col5, col6, col7 = st.columns(4)
         col4.metric("Sharpe Ratio", f"{sharpe:.2f}")
         col5.metric("Sortino Ratio", f"{sortino:.2f}")
         col6.metric("Max Drawdown (%)", f"{max_drawdown * 100:.2f}%")
@@ -194,6 +195,8 @@ else:
                                 xaxis_title="Fecha", yaxis_title="Precio Normalizado")
         st.plotly_chart(fig_price, use_container_width=True)
 
+
+
         # === Histogramas por separado
         st.subheader(f"Distribución de Retornos: {selected_asset} vs {selected_benchmark}")
         col_hist1, col_hist2 = st.columns(2)
@@ -209,3 +212,5 @@ else:
             fig_hist_benchmark = px.histogram(benchmark_returns, nbins=50, title=f"Distribución de Retornos - {selected_benchmark}",
                                             labels={"value": "Retornos"}, color_discrete_sequence=["#ff7f0e"])
             st.plotly_chart(fig_hist_benchmark, use_container_width=True)
+
+        
