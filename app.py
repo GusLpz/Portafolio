@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="Análisis de Inversones", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
@@ -75,6 +75,44 @@ def Calcular_CVaR(returns, var):
     cvar = returns[returns <= var].mean()
     return cvar
 
+def calcular_sharpe_dinamico(rendimientos, selected_timeframe, rf_anual=0.0449):
+    """
+    Calcula el Sharpe Ratio ajustado al horizonte temporal seleccionado.
+    
+    Parámetros:
+    - rendimientos: pd.Series con retornos diarios del activo.
+    - selected_timeframe: str, clave del periodo seleccionado por el usuario (ej. '3 meses').
+    - rf_anual: float, tasa libre de riesgo anualizada (por defecto 4.49%).
+
+    Retorna:
+    - sharpe_ratio ajustado al periodo seleccionado.
+    """
+
+    # Diccionario de días hábiles estimados por periodo
+    period_days = {
+        "1 mes": 21,
+        "3 meses": 63,
+        "6 meses": 126,
+        "1 año": 252,
+        "2 años": 504,
+        "5 años": 1260,
+        "10 años": 2520
+    }
+
+    dias_periodo = period_days.get(selected_timeframe, 252)  # por defecto 1 año
+
+    # Tasa libre de riesgo ajustada al periodo (compuesta)
+    rf_periodo = (1 + rf_anual) ** (dias_periodo / 252) - 1
+
+    # Retorno esperado y volatilidad ajustados al periodo
+    retorno_esperado = rendimientos.mean() * dias_periodo
+    volatilidad_ajustada = rendimientos.std() * np.sqrt(dias_periodo)
+
+    sharpe_ratio = (retorno_esperado - rf_periodo) / volatilidad_ajustada
+    return sharpe_ratio
+
+
+
 if len(simbolos) != len(pesos) or abs(sum(pesos) - 1) > 1e-6:
     # Mensaje de error si los simbolos y pesos no coinciden
     st.sidebar.error("El número de símbolos y pesos no coincide. Por favor, verifique los datos ingresados.")
@@ -111,7 +149,7 @@ else:
         # 2️⃣ INDICADORES DE RIESGO
         # ================================
         st.subheader("🔸 Indicadores de Riesgo")
-        sharpe = rendimientos.mean() / rendimientos.std()
+        sharpe = calcular_sharpe_dinamico(rendimientos, selected_timeframe)
         sortino = rendimientos.mean() / rendimientos[rendimientos < 0].std()
         var_95 = Calcular_Var(rendimientos)
         cvar_95 = Calcular_CVaR(rendimientos, var_95)
