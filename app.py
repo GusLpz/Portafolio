@@ -33,7 +33,7 @@ benchmark_options = {
 selected_benchmark = st.sidebar.selectbox("Seleccione un benchmark", list(benchmark_options.keys()))
 
 #Periodo de tiempo
-end_date = datetime.now()
+end_date = datetime.today().date()
 start_date_options = { 
 
     "1 mes": end_date - timedelta(days=30),
@@ -58,8 +58,8 @@ def calcular_metricas(data):
     """Calcula los rendimientos diarios y acumulados de los precios ajustados."""
     returns = data.pct_change().dropna()
     returns_acumulados = (1 + returns).cumprod() - 1
-    #normalized_prices = data / data.iloc[0] * 100
-    return returns, returns_acumulados
+    normalized_prices = data / data.iloc[0] * 100
+    return returns, returns_acumulados, normalized_prices
 
 def calcular_rendimiento_portafolio(returns, pesos):
     
@@ -84,18 +84,18 @@ else:
 
     all_symbols = simbolos + [benchmark_options[selected_benchmark]]
     data_stocks = obtener_datos(all_symbols, start_date, end_date)
-    returns, returns_acumulados= calcular_metricas(data_stocks)
+    returns, returns_acumulados, precios_norm = calcular_metricas(data_stocks)
 
 
-# TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
+    # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
 
-with tab1:
-    st.header("Analisis individual del Activo")
-    selected_asset = st.selectbox("Seleccione un activo", simbolos)
-    
-    # Opción 1: desempaquetar
-    col1, = st.columns(1)  
-    col1.metric(
-        "Rendimiento Acumulado (%)", 
-        f"{returns_acumulados[selected_asset].iloc[-1] * 100:.2f}%"
-    )
+    with tab1:
+        st.header("Analisis individual del Activo")
+        selected_asset = st.selectbox("Seleccione un activo", simbolos)
+        
+        # Opción 1: desempaquetar
+        col1, = st.columns(1)  
+        col1.metric(
+            "Rendimiento Acumulado (%)", 
+            f"{returns_acumulados[selected_asset].iloc[-1] * 100:.2f}%"
+        )
