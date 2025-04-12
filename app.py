@@ -5,15 +5,15 @@ import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
+from scipy.stats import norm
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="Investment Analisys", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
-tab1, tab2 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio"])
+tab1, tab2, tab3 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio", "Simulación Monte Carlo"])
 
 # Entrada de simbolos y pesos 
 simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL, MSFT, GOOG, AMZN, NVDA")
@@ -215,3 +215,88 @@ else:
             st.plotly_chart(fig_hist_benchmark, use_container_width=True)
 
         
+with tab3: 
+        st.header("Parámetros de la Simulación")
+
+        # Entrada de parámetros
+        S0 = st.number_input("Precio actual del activo (S0)", value=100.0, min_value=0.0, step=1.0)
+        K = st.number_input("Precio de ejercicio (K)", value=105.0, min_value=0.0, step=1.0)
+        T = st.number_input("Tiempo hasta vencimiento (T, años)", value=1.0, min_value=0.1, step=0.1)
+        r = st.number_input("Tasa libre de riesgo (r)", value=0.05, step=0.01)
+        sigma = st.number_input("Volatilidad (σ)", value=0.2, step=0.01)
+        N = st.number_input("Número de simulaciones (N)", value=100000, step=1000)
+
+        # Opción para mostrar trayectorias de precios
+        mostrar_paths = st.checkbox("Mostrar sample paths simulados")
+        if mostrar_paths:
+            n_paths = st.number_input("Número de sample paths", value=10, step=1)
+            n_steps = st.number_input("Número de pasos en el tiempo", value=100, step=10)
+
+        if st.button("Ejecutar Simulación"):
+            # Semilla para reproducibilidad
+            np.random.seed(42)
+            
+            ## SIMULACIÓN DE VALOR FINAL DEL ACTIVO (ST)
+            # Generación de variables aleatorias para la simulación (valor final)
+            Z = np.random.standard_normal(int(N))
+            ST = S0 * np.exp((r - 0.5 * sigma ** 2) * T + sigma * np.sqrt(T) * Z)
+            
+            # Cálculo del payoff para cada simulación
+            payoffs = np.maximum(ST - K, 0)
+            call_price_mc = np.exp(-r * T) * np.mean(payoffs)
+            
+            # Cálculo del precio según la fórmula de Black-Scholes
+            d1 = (np.log(S0 / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+            d2 = d1 - sigma * np.sqrt(T)
+            call_price_bs = S0 * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+            
+            # Mostrar resultados
+            st.write(f"**Precio de la opción (Monte Carlo):** {call_price_mc:.2f}")
+            st.write(f"**Precio de la opción (Black-Scholes):** {call_price_bs:.2f}")
+            
+            ## GRÁFICO 1: Histograma de ST con línea en K
+            fig1, ax1 = plt.subplots()
+            ax1.hist(ST, bins=50, density=True, alpha=0.7)
+            ax1.axvline(K, color='red', linestyle='dashed', linewidth=2, label=f'Precio de ejercicio (K={K})')
+            ax1.set_title("Distribución de precios al vencimiento (ST)")
+            ax1.set_xlabel("Precio del activo")
+            ax1.set_ylabel("Densidad")
+            ax1.legend()
+            st.pyplot(fig1)
+            
+            ## GRÁFICO 2: Convergencia de la estimación de la opción
+            # Se calcula la media acumulada de los payoffs descontados
+            running_avg = np.cumsum(payoffs) / np.arange(1, int(N)+1)
+            running_price = np.exp(-r * T) * running_avg
+
+            fig2, ax2 = plt.subplots()
+            ax2.plot(running_price, lw=1)
+            ax2.axhline(call_price_mc, color='red', linestyle='dashed', linewidth=2, label=f'Valor final (MC = {call_price_mc:.2f})')
+            ax2.set_title("Convergencia del precio de la opción (Monte Carlo)")
+            ax2.set_xlabel("Número de simulaciones")
+            ax2.set_ylabel("Precio estimado")
+            ax2.legend()
+            st.pyplot(fig2)
+            
+            ## GRÁFICO 3: Simulación de sample paths (si se selecciona)
+            if mostrar_paths:
+                dt = T / n_steps
+                time_grid = np.linspace(0, T, n_steps+1)
+                paths = np.zeros((n_paths, n_steps+1))
+                paths[:, 0] = S0
+                
+                for i in range(n_paths):
+                    # Simulación de una trayectoria
+                    z = np.random.standard_normal(n_steps)
+                    for j in range(1, n_steps+1):
+                        paths[i, j] = paths[i, j-1] * np.exp((r - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * z[j-1])
+                
+                fig3, ax3 = plt.subplots()
+                for i in range(n_paths):
+                    ax3.plot(time_grid, paths[i, :], lw=1, label=f'Trayectoria {i+1}' if n_paths<=10 else None)
+                ax3.set_title("Sample paths simulados")
+                ax3.set_xlabel("Tiempo")
+                ax3.set_ylabel("Precio del activo")
+                if n_paths <= 10:
+                    ax3.legend()
+                st.pyplot(fig3)
