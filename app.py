@@ -6,10 +6,11 @@ import plotly.express as px
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.stats import norm
+import matplotlib.pyplot as plt
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="Holis holis", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
