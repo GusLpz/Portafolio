@@ -279,6 +279,51 @@ else:
         )
         st.plotly_chart(fig_port, use_container_width=True)
 
+        # ================================
+        # 🔄 MATRIZ DE CORRELACIÓN ENTRE ACTIVOS
+        # ================================
+        st.subheader("📌 Correlación entre Activos del Portafolio")
+        corr_matrix = returns[simbolos].corr()
+
+        fig_corr = px.imshow(corr_matrix, 
+                             text_auto=True, 
+                             color_continuous_scale='RdBu_r', 
+                             zmin=-1, zmax=1,
+                             title="Matriz de Correlación entre Activos")
+        st.plotly_chart(fig_corr, use_container_width=True)
+
+        st.subheader("📊 Contribución Individual al Portafolio")
+
+        # Contribución al rendimiento promedio
+        contrib_rend = (returns[simbolos].mean() * pesos)
+        contrib_riesgo = (returns[simbolos].std() * pesos)
+
+        contrib_df = pd.DataFrame({
+            "Activo": simbolos,
+            "Contribución al Retorno (%)": contrib_rend * 100,
+            "Contribución al Riesgo (%)": contrib_riesgo * 100
+        })
+
+        st.dataframe(contrib_df.set_index("Activo").style
+                     .background_gradient(cmap="YlGn", axis=0), use_container_width=True)
+
+        st.subheader("📉 Máximo Drawdown del Portafolio")
+
+        # Cálculo y gráfico del drawdown
+        rolling_max = portfolio_cumreturns.cummax()
+        drawdown = (portfolio_cumreturns - rolling_max) / rolling_max
+
+        fig_dd = go.Figure()
+        fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown * 100,
+                                    fill='tozeroy',
+                                    name='Drawdown (%)',
+                                    line=dict(color='crimson')))
+        fig_dd.update_layout(title="Drawdown del Portafolio (%)",
+                             xaxis_title="Fecha",
+                             yaxis_title="Drawdown (%)")
+        st.plotly_chart(fig_dd, use_container_width=True)
+
+
 
 
         
