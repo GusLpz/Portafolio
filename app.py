@@ -258,26 +258,109 @@ else:
         colp6.metric("Beta del Portafolio", f"{beta_portfolio:.2f}")
 
         # Gráfico comparativo: Rendimientos Acumulados del Portafolio vs Benchmark
-        st.subheader(f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}")
-        fig_port = go.Figure()
-        fig_port.add_trace(go.Scatter(
-            x=portfolio_cumreturns.index,
-            y=portfolio_cumreturns,
-            name='Portafolio',
-            line=dict(color='blue')
-        ))
-        fig_port.add_trace(go.Scatter(
-            x=benchmark_cumreturns.index,
-            y=benchmark_cumreturns,
-            name=selected_benchmark,
-            line=dict(color='orange')
-        ))
-        fig_port.update_layout(
-            title=f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}",
-            xaxis_title="Fecha",
-            yaxis_title="Rendimiento Acumulado"
+        # ================================
+        # DISTRIBUCIÓN DE RETORNOS - PORTAFOLIO vs BENCHMARK
+        # ================================
+        st.subheader("Distribución de Retornos del Portafolio vs Benchmark")
+
+        # 1. Cálculo de VaR y CVaR del Portafolio y del Benchmark
+        var_95_portfolio = Calcular_Var(portfolio_returns, confidence_level=0.95)
+        cvar_95_portfolio = Calcular_CVaR(portfolio_returns, var_95_portfolio)
+
+        var_95_benchmark = Calcular_Var(benchmark_returns, confidence_level=0.95)
+        cvar_95_benchmark = Calcular_CVaR(benchmark_returns, var_95_benchmark)
+
+        # 2. Histograma de Retornos del Portafolio con líneas VaR y CVaR
+        fig_dist_port = go.Figure()
+
+        fig_dist_port.add_trace(
+            go.Histogram(
+                x=portfolio_returns,
+                nbinsx=50,
+                name='Retornos',
+                marker_color='green',
+                opacity=0.75
+            )
         )
-        st.plotly_chart(fig_port, use_container_width=True)
+
+        # Línea de VaR 95%
+        fig_dist_port.add_vline(
+            x=var_95_portfolio,
+            line_width=2,
+            line_dash="dash",
+            line_color="blue",
+            annotation_text="VaR 95%",
+            annotation_position="top left"
+        )
+
+        # Línea de CVaR 95%
+        fig_dist_port.add_vline(
+            x=cvar_95_portfolio,
+            line_width=2,
+            line_dash="dot",
+            line_color="red",
+            annotation_text="CVaR 95%",
+            annotation_position="top left"
+        )
+
+        fig_dist_port.update_layout(
+            title="Distribución de Retornos - Portafolio",
+            xaxis_title="Retornos",
+            yaxis_title="Frecuencia",
+            bargap=0.2,
+            template="plotly_white",   # Puedes probar "ggplot2", "seaborn", etc.
+            showlegend=False
+        )
+
+        # 3. Histograma de Retornos del Benchmark con líneas VaR y CVaR
+        fig_dist_bench = go.Figure()
+
+        fig_dist_bench.add_trace(
+            go.Histogram(
+                x=benchmark_returns,
+                nbinsx=50,
+                name='Retornos',
+                marker_color='orange',
+                opacity=0.75
+            )
+        )
+
+        # Línea de VaR 95%
+        fig_dist_bench.add_vline(
+            x=var_95_benchmark,
+            line_width=2,
+            line_dash="dash",
+            line_color="blue",
+            annotation_text="VaR 95%",
+            annotation_position="top left"
+        )
+
+        # Línea de CVaR 95%
+        fig_dist_bench.add_vline(
+            x=cvar_95_benchmark,
+            line_width=2,
+            line_dash="dot",
+            line_color="red",
+            annotation_text="CVaR 95%",
+            annotation_position="top left"
+        )
+
+        fig_dist_bench.update_layout(
+            title=f"Distribución de Retornos - {selected_benchmark}",
+            xaxis_title="Retornos",
+            yaxis_title="Frecuencia",
+            bargap=0.2,
+            template="plotly_white",
+            showlegend=False
+        )
+
+        # 4. Mostrar las gráficas lado a lado
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.plotly_chart(fig_dist_port, use_container_width=True)
+        with col_right:
+            st.plotly_chart(fig_dist_bench, use_container_width=True)
+
 
         # ================================
         # 🔄 MATRIZ DE CORRELACIÓN ENTRE ACTIVOS
