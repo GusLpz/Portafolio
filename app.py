@@ -220,44 +220,43 @@ else:
                                             labels={"value": "Retornos"}, color_discrete_sequence=["#ff7f0e"])
             st.plotly_chart(fig_hist_benchmark, use_container_width=True)
 
+    # ---------------------------------------------------------
+    # TAB 2: ANALISIS DEL PORTAFOLIO
+    # ---------------------------------------------------------
     with tab2:
-        st.header("📊 Análisis del Portafolio")
-        # NUEVO EN TAB2: Creamos un encabezado
-        st.header("Análisis del Portafolio")
+        st.header("📈 Análisis del Portafolio")
 
-        # NUEVO EN TAB2: Calculamos los retornos del portafolio y del benchmark
+        # Calculamos los retornos del benchmark y del portafolio
         benchmark_symbol = benchmark_options[selected_benchmark]
         benchmark_returns = returns[benchmark_symbol]
         portfolio_returns = calcular_rendimiento_portafolio(returns[simbolos], pesos)
 
-        # Cálculo de los rendimientos acumulados del portafolio y del benchmark
+        # Rendimientos acumulados para portafolio y benchmark
         portfolio_cumreturns = (1 + portfolio_returns).cumprod() - 1
         benchmark_cumreturns = (1 + benchmark_returns).cumprod() - 1
 
-        # NUEVO EN TAB2: Calculamos métricas para el portafolio
+        # Calculamos las principales métricas del portafolio
         total_return_portfolio = portfolio_cumreturns.iloc[-1] * 100  # en porcentaje
         sharpe_portfolio = calcular_sharpe_dinamico(portfolio_returns, selected_timeframe)
         sortino_portfolio = portfolio_returns.mean() / portfolio_returns[portfolio_returns < 0].std()
         var_95_portfolio = Calcular_Var(portfolio_returns)
         cvar_95_portfolio = Calcular_CVaR(portfolio_returns, var_95_portfolio)
-
-        # Máx Drawdown (otra forma de calcularlo en base a rend. acumulados)
         max_dd_portfolio = (portfolio_cumreturns.cummax() - portfolio_cumreturns).max() * 100
 
-        # NUEVO EN TAB2: Sección de métricas
-        colp1, colp2, colp3, colp4, colp5 = st.columns(5)
-        colp1.metric("Rendimiento Total del Portafolio", f"{total_return_portfolio:.2f}%")
-        colp2.metric("Sharpe Ratio del Portafolio", f"{sharpe_portfolio:.2f}")
-        colp3.metric("Sortino Ratio del Portafolio", f"{sortino_portfolio:.2f}")
-        colp4.metric("VaR 95% del Portafolio", f"{var_95_portfolio * 100:.2f}%")
-        colp5.metric("CVaR 95% del Portafolio", f"{cvar_95_portfolio * 100:.2f}%")
+        # NUEVO: Cálculo del beta del portafolio
+        beta_portfolio = np.cov(portfolio_returns, benchmark_returns)[0][1] / np.var(benchmark_returns)
 
-        # Podemos mostrar también el Max Drawdown
-        st.metric("Max Drawdown del Portafolio", f"{max_dd_portfolio:.2f}%")
+        # Mostramos las métricas utilizando columnas (se agregan 6 columnas para incluir el beta)
+        colp1, colp2, colp3, colp4, colp5, colp6 = st.columns(6)
+        colp1.metric("Rendimiento Total", f"{total_return_portfolio:.2f}%")
+        colp2.metric("Sharpe Ratio", f"{sharpe_portfolio:.2f}")
+        colp3.metric("Sortino Ratio", f"{sortino_portfolio:.2f}")
+        colp4.metric("VaR 95%", f"{var_95_portfolio * 100:.2f}%")
+        colp5.metric("CVaR 95%", f"{cvar_95_portfolio * 100:.2f}%")
+        colp6.metric("Beta del Portafolio", f"{beta_portfolio:.2f}")
 
-        # NUEVO EN TAB2: Gráfico de rendimientos acumulados: Portafolio vs. Benchmark
+        # Gráfico comparativo: Rendimientos Acumulados del Portafolio vs Benchmark
         st.subheader(f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}")
-
         fig_port = go.Figure()
         fig_port.add_trace(go.Scatter(
             x=portfolio_cumreturns.index,
@@ -271,14 +270,13 @@ else:
             name=selected_benchmark,
             line=dict(color='orange')
         ))
-
         fig_port.update_layout(
             title=f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}",
             xaxis_title="Fecha",
             yaxis_title="Rendimiento Acumulado"
         )
-
         st.plotly_chart(fig_port, use_container_width=True)
+
 
 
         
