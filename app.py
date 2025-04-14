@@ -159,15 +159,16 @@ else:
 
         max_drawdown = (rend_acumulado.cummax() - rend_acumulado).max()
 
-        col4, col5, col6, colbeta = st.columns(4)
+        col4, col5, col6 = st.columns(3)
         col4.metric("Sharpe Ratio", f"{sharpe:.2f}")
         col5.metric("Sortino Ratio", f"{sortino:.2f}")
         col6.metric("Max Drawdown (%)", f"{max_drawdown * 100:.2f}%")
+        
+
+
+
+        col7, col8, colbeta = st.columns(3)
         colbeta.metric("Beta", f"{beta:.2f}")
-
-
-
-        col7, col8 = st.columns(2)
         col7.metric("VaR 95% (%)", f"{var_95 * 100:.2f}%")
         col8.metric("CVaR 95% (%)", f"{cvar_95 * 100:.2f}%")
 
