@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 # Configiracion de la pagina
-st.set_page_config(page_title="holaaaa", page_icon="📈", layout="wide")
+st.set_page_config(page_title="holis holis", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
@@ -258,6 +258,28 @@ else:
         colp6.metric("Beta del Portafolio", f"{beta_portfolio:.2f}")
 
         # Gráfico comparativo: Rendimientos Acumulados del Portafolio vs Benchmark
+
+        st.subheader(f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}")
+        fig_port = go.Figure()
+        fig_port.add_trace(go.Scatter(
+            x=portfolio_cumreturns.index,
+            y=portfolio_cumreturns,
+            name='Portafolio',
+            line=dict(color='blue')
+        ))
+        fig_port.add_trace(go.Scatter(
+            x=benchmark_cumreturns.index,
+            y=benchmark_cumreturns,
+            name=selected_benchmark,
+            line=dict(color='orange')
+        ))
+        fig_port.update_layout(
+            title=f"Rendimientos Acumulados: Portafolio vs {selected_benchmark}",
+            xaxis_title="Fecha",
+            yaxis_title="Rendimiento Acumulado"
+        )
+        st.plotly_chart(fig_port, use_container_width=True)
+
         # ================================
         # DISTRIBUCIÓN DE RETORNOS - PORTAFOLIO vs BENCHMARK
         # ================================
