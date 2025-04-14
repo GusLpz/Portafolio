@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 # Configuración de la página
-st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
+st.set_page_config(page_title="holis holis", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversión")
 
 # Creamos pestañas para la aplicación
