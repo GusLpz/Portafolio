@@ -247,10 +247,12 @@ else:
         beta_portfolio = np.cov(portfolio_returns, benchmark_returns)[0][1] / np.var(benchmark_returns)
 
         # Mostramos las métricas utilizando columnas (se agregan 6 columnas para incluir el beta)
-        colp1, colp2, colp3, colp4, colp5, colp6 = st.columns(6)
+        colp1, colp2, colp3 = st.columns(3)
         colp1.metric("Rendimiento Total", f"{total_return_portfolio:.2f}%")
         colp2.metric("Sharpe Ratio", f"{sharpe_portfolio:.2f}")
         colp3.metric("Sortino Ratio", f"{sortino_portfolio:.2f}")
+
+        colp4, colp5, colp6 = st.columns(3)
         colp4.metric("VaR 95%", f"{var_95_portfolio * 100:.2f}%")
         colp5.metric("CVaR 95%", f"{cvar_95_portfolio * 100:.2f}%")
         colp6.metric("Beta del Portafolio", f"{beta_portfolio:.2f}")
