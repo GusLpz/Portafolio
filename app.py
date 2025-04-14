@@ -9,21 +9,21 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 
-# Configiracion de la pagina
+# Configuración de la página
 st.set_page_config(page_title="Analizador de Portafolios", page_icon="📈", layout="wide")
-st.sidebar.title("Analizador de Portafolios de Inversion")
+st.sidebar.title("Analizador de Portafolios de Inversión")
 
-# Creamos pestañas para la aplicacion
+# Creamos pestañas para la aplicación
 tab1, tab2, tab3 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio", "Simulación Monte Carlo"])
 
-# Entrada de simbolos y pesos 
-simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL, MSFT, GOOG, AMZN, NVDA")
+# Entrada de símbolos y pesos 
+simbolos = st.sidebar.text_input("Ingrese los símbolos de las acciones (separados por comas)", "AAPL, MSFT, GOOG, AMZN, NVDA")
 pesos = st.sidebar.text_input("Ingrese los pesos de las acciones (separados por comas)", "0.2,0.2,0.2,0.2,0.2")
 
 simbolos = [s.strip().upper() for s in simbolos.split(",")]
 pesos = [float(p) for p in pesos.split(",")]    
 
-# Seleccion de benchmark
+# Selección de benchmark
 benchmark_options = {
     "S&P 500": "^GSPC",
     "Nasdaq": "^IXIC",
@@ -34,17 +34,17 @@ benchmark_options = {
 
 selected_benchmark = st.sidebar.selectbox("Seleccione un benchmark", list(benchmark_options.keys()))
 
-#Periodo de tiempo
+# Periodo de tiempo
 end_date = datetime.today().date()
 start_date_options = { 
-
     "1 mes": end_date - timedelta(days=30),
     "3 meses": end_date - timedelta(days=90),
     "6 meses": end_date - timedelta(days=180),
     "1 año": end_date - timedelta(days=365),
     "2 años": end_date - timedelta(days=365*2),
     "5 años": end_date - timedelta(days=365*5),
-    "10 años": end_date - timedelta(days=365*10) }
+    "10 años": end_date - timedelta(days=365*10)
+}
 
 selected_timeframe = st.sidebar.selectbox("Seleccione el periodo de tiempo", list(start_date_options.keys()))
 start_date = start_date_options[selected_timeframe]
@@ -52,7 +52,7 @@ start_date = start_date_options[selected_timeframe]
 # FUNCIONES AUXILIARES
 
 def obtener_datos(simbolos, start_date, end_date):
-    """Obtiene los datos de precios ajustados de los simbolos especificados entre las fechas dadas."""
+    """Obtiene los datos de precios ajustados de los símbolos especificados entre las fechas dadas."""
     data = yf.download(simbolos, start=start_date, end=end_date)["Close"]
     return data.ffill().dropna()
 
@@ -64,7 +64,6 @@ def calcular_metricas(data):
     return returns, returns_acumulados, normalized_prices
 
 def calcular_rendimiento_portafolio(returns, pesos):
-    
     portafolio_returns = (returns * pesos).sum(axis=1)
     return portafolio_returns
 
@@ -72,6 +71,7 @@ def Calcular_Var(returns, confidence_level=0.95):
     """Calcula el VaR del portafolio."""
     var = np.percentile(returns, (1 - confidence_level) * 100)
     return var
+
 def Calcular_CVaR(returns, var):
     """Calcula el CVaR del portafolio."""
     cvar = returns[returns <= var].mean()
@@ -85,11 +85,10 @@ def calcular_sharpe_dinamico(rendimientos, selected_timeframe, rf_anual=0.0449):
     - rendimientos: pd.Series con retornos diarios del activo.
     - selected_timeframe: str, clave del periodo seleccionado por el usuario (ej. '3 meses').
     - rf_anual: float, tasa libre de riesgo anualizada (por defecto 4.49%).
-
+    
     Retorna:
     - sharpe_ratio ajustado al periodo seleccionado.
     """
-
     # Diccionario de días hábiles estimados por periodo
     period_days = {
         "1 mes": 21,
@@ -113,19 +112,14 @@ def calcular_sharpe_dinamico(rendimientos, selected_timeframe, rf_anual=0.0449):
     sharpe_ratio = (retorno_esperado - rf_periodo) / volatilidad_ajustada
     return sharpe_ratio
 
-
-
 if len(simbolos) != len(pesos) or abs(sum(pesos) - 1) > 1e-6:
-    # Mensaje de error si los simbolos y pesos no coinciden
+    # Mensaje de error si los símbolos y pesos no coinciden
     st.sidebar.error("El número de símbolos y pesos no coincide. Por favor, verifique los datos ingresados.")
 else:
-
     # Descarga de datos
-
     all_symbols = simbolos + [benchmark_options[selected_benchmark]]
     data_stocks = obtener_datos(all_symbols, start_date, end_date)
     returns, returns_acumulados, precios_norm = calcular_metricas(data_stocks)
-
 
     # TAB 1: ANALISIS INDIVIDUAL DEL ACTIVO 
     with tab1:
@@ -157,6 +151,8 @@ else:
         cvar_95 = Calcular_CVaR(rendimientos, var_95)
         beta = np.cov(rendimientos, returns[benchmark_options[selected_benchmark]])[0][1] / np.var(returns[benchmark_options[selected_benchmark]])
 
+        # Se puede calcular el max drawdown sobre los rendimientos acumulados o sobre los precios normalizados.
+        # En este ejemplo se muestra el cálculo en base a rend_acumulado:
         max_drawdown = (rend_acumulado.cummax() - rend_acumulado).max()
 
         col4, col5, col6 = st.columns(3)
@@ -164,9 +160,6 @@ else:
         col5.metric("Sortino Ratio", f"{sortino:.2f}")
         col6.metric("Max Drawdown (%)", f"{max_drawdown * 100:.2f}%")
         
-
-
-
         col7, col8, colbeta = st.columns(3)
         colbeta.metric("Beta", f"{beta:.2f}")
         col7.metric("VaR 95% (%)", f"{var_95 * 100:.2f}%")
@@ -186,23 +179,49 @@ else:
         # ================================
         # 4️⃣ GRÁFICOS INTERACTIVOS
         # ================================
-
         st.subheader("📊 Comparaciones Visuales: Activo vs Benchmark")
         benchmark_symbol = benchmark_options[selected_benchmark]
         benchmark_norm = precios_norm[benchmark_symbol]
         benchmark_returns = returns[benchmark_symbol]
 
-        # === Gráfico principal de precios normalizados (100 base)
+        # === Gráfico principal de precios normalizados (Base 100)
         fig_price = go.Figure()
         fig_price.add_trace(go.Scatter(x=precios_norm.index, y=precios_norm[selected_asset], 
-                                    name=selected_asset, line=dict(color='royalblue')))
+                                name=selected_asset, line=dict(color='royalblue')))
         fig_price.add_trace(go.Scatter(x=benchmark_norm.index, y=benchmark_norm, 
-                                    name=selected_benchmark, line=dict(color='firebrick')))
-        fig_price.update_layout(title=f"Precio Normalizado: {selected_asset} vs {selected_benchmark} (Base 100)",
-                                xaxis_title="Fecha", yaxis_title="Precio Normalizado")
+                                name=selected_benchmark, line=dict(color='firebrick')))
+
+        # NUEVO: Cálculo del High Water Mark (HWM) y Drawdown en base a precios normalizados
+        hwm_series = precios_norm[selected_asset].cummax()  # High Water Mark
+        drawdown_series = hwm_series - precios_norm[selected_asset]  # Serie de drawdown
+        max_dd_value = drawdown_series.max()  # Máximo drawdown
+        max_dd_date = drawdown_series.idxmax()  # Fecha donde ocurre el máximo drawdown
+
+        # NUEVO: Agregar línea del High Water Mark a la gráfica
+        fig_price.add_trace(go.Scatter(
+            x=precios_norm.index,
+            y=hwm_series,
+            name='High Water Mark',
+            line=dict(color='green', dash='dot')
+        ))
+
+        # NUEVO: Agregar marcador y anotación en la fecha del máximo drawdown
+        fig_price.add_trace(go.Scatter(
+            x=[max_dd_date],
+            y=[precios_norm[selected_asset].loc[max_dd_date]],
+            mode='markers+text',
+            name='Max Drawdown',
+            text=[f'Max DD: {max_dd_value:.2f}'],
+            textposition='bottom center',
+            marker=dict(color='red', size=10)
+        ))
+        
+        fig_price.update_layout(
+            title=f"Precio Normalizado: {selected_asset} vs {selected_benchmark} (Base 100)",
+            xaxis_title="Fecha",
+            yaxis_title="Precio Normalizado"
+        )
         st.plotly_chart(fig_price, use_container_width=True)
-
-
 
         # === Histogramas por separado
         st.subheader(f"Distribución de Retornos: {selected_asset} vs {selected_benchmark}")
@@ -220,8 +239,7 @@ else:
                                             labels={"value": "Retornos"}, color_discrete_sequence=["#ff7f0e"])
             st.plotly_chart(fig_hist_benchmark, use_container_width=True)
 
-        
-with tab3: 
+    with tab3: 
         st.header("Parámetros de la Simulación")
 
         # Entrada de parámetros
