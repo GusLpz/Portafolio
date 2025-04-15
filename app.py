@@ -432,50 +432,55 @@ else:
 
 # ---------------------------------------------------------
 # TAB 3: OPTIMIZACIÓN DEL PORTAFOLIO - MARKOWITZ
+# ---------------------------------------------------------
+
+
 
     with tab3:
         st.header("Optimización del Portafolio - Markowitz")
+
         if len(simbolos) < 2:
             st.error("Se requiere al menos dos activos para la optimización.")
         else:
-            # Selección del método para calcular rendimientos esperados
-            rend_model = st.radio("Método para calcular rendimientos esperados", ["Histórico", "CAPM"])
+            # --- Selección del método para calcular rendimientos esperados ---
+            rend_model = st.radio("Método para calcular rendimientos esperados", ["Histórico", "CAPM"], horizontal=True)
             risk_free_rate = st.number_input("Tasa libre de riesgo (anual)", value=0.0449, step=0.001)
             
-            # Calcular los rendimientos esperados (exp_returns) según el método seleccionado
+            # Cálculo de rendimientos esperados según método seleccionado
             if rend_model == "Histórico":
                 exp_returns = returns[simbolos].mean()
             else:
-                # Convertir la tasa libre de riesgo anual a diaria (suponiendo 252 días hábiles)
+                # Para CAPM se convierte la tasa anual a diaria (aprox. 252 días hábiles)
                 rf_daily = (1 + risk_free_rate) ** (1/252) - 1
-                # Rendimiento promedio diario del benchmark (usamos el símbolo del benchmark ya cargado)
                 benchmark_symbol = benchmark_options[selected_benchmark]
                 bench_exp = returns[benchmark_symbol].mean()
-                # Calcular CAPM para cada activo: rf_daily + beta*(bench_exp - rf_daily)
                 exp_returns = pd.Series(index=simbolos, dtype=float)
+                # Se calculan los beta individuales
+                beta_values = {}
                 for s in simbolos:
                     beta_i = np.cov(returns[s], returns[benchmark_symbol])[0, 1] / np.var(returns[benchmark_symbol])
+                    beta_values[s] = beta_i
                     exp_returns[s] = rf_daily + beta_i * (bench_exp - rf_daily)
-                    
-            # Cálculo de la matriz de covarianza y otros parámetros para la optimización
+            
+            st.subheader("Rendimientos Esperados por Activo")
+            st.dataframe(exp_returns.to_frame(name="Rendimiento Esperado"))
+
+            # --- Cálculo de la matriz de covarianza y configuración de la optimización ---
             cov_matrix = returns[simbolos].cov()
             num_activos = len(simbolos)
-            
-            # Elección del tipo de optimización
             opt_type = st.selectbox("Tipo de optimización", ["Minimizar Varianza", "Maximizar Sharpe Ratio"])
             
-            # Restricción: suma de pesos igual a 1, y cada peso entre 0 y 1
+            # Restricciones: suma de pesos igual a 1 y cada peso entre 0 y 1
             constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
             bounds = tuple((0, 1) for _ in range(num_activos))
             initial_weights = np.array(num_activos * [1. / num_activos])
             
-            # Función para obtener rendimiento y volatilidad del portafolio
             def portfolio_performance(weights, mean_returns, cov_matrix):
                 ret = np.dot(weights, mean_returns)
                 vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
                 return ret, vol
             
-            # Selección de la función objetivo según el tipo de optimización
+            # --- Optimización ---
             if opt_type == "Minimizar Varianza":
                 def portfolio_variance(weights):
                     return np.dot(weights.T, np.dot(cov_matrix, weights))
@@ -488,18 +493,33 @@ else:
             
             if optimizacion.success:
                 optimal_weights = optimizacion.x
+                # --- Cálculo de métricas del portafolio ---
+                ret_opt, vol_opt = portfolio_performance(optimal_weights, exp_returns, cov_matrix)
+                sharpe_opt = (ret_opt - risk_free_rate) / vol_opt
+                
+                # Cálculo de la beta del portafolio utilizando retornos históricos
+                portfolio_returns_hist = returns[simbolos].dot(optimal_weights)
+                benchmark_symbol = benchmark_options[selected_benchmark]
+                benchmark_returns = returns[benchmark_symbol]
+                portfolio_beta = np.cov(portfolio_returns_hist, benchmark_returns)[0, 1] / np.var(benchmark_returns)
+                
+                # --- Presentación estética de las métricas en columnas ---
+                st.subheader("Resultados de la Optimización")
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Retorno Esperado", f"{ret_opt*100:.2f}%")
+                col2.metric("Volatilidad", f"{vol_opt*100:.2f}%")
+                col3.metric("Ratio Sharpe", f"{sharpe_opt:.2f}")
+                col4.metric("Beta del Portafolio", f"{portfolio_beta:.2f}")
+                
+                # Mostrar los pesos óptimos en una tabla
                 st.subheader("Pesos Óptimos")
                 weights_df = pd.DataFrame({
                     "Activo": simbolos,
                     "Peso Óptimo": optimal_weights
                 })
-                st.dataframe(weights_df)
-                ret_opt, vol_opt = portfolio_performance(optimal_weights, exp_returns, cov_matrix)
-                sharpe_opt = (ret_opt - risk_free_rate) / vol_opt
-                st.metric("Retorno Esperado", f"{ret_opt * 100:.2f}%")
-                st.metric("Volatilidad", f"{vol_opt * 100:.2f}%")
-                st.metric("Ratio Sharpe", f"{sharpe_opt:.2f}")
+                st.dataframe(weights_df.set_index("Activo"))
                 
+                # --- Cálculo y presentación de la Frontera Eficiente ---
                 st.subheader("Frontera Eficiente")
                 target_returns = np.linspace(exp_returns.min(), exp_returns.max(), 50)
                 frontier_vol = []
@@ -508,7 +528,8 @@ else:
                         {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
                         {'type': 'eq', 'fun': lambda x, target=target: np.dot(x, exp_returns) - target}
                     )
-                    opt_min = minimize(lambda w: np.dot(w.T, np.dot(cov_matrix, w)), initial_weights, method='SLSQP', bounds=bounds, constraints=constraints_target)
+                    opt_min = minimize(lambda w: np.dot(w.T, np.dot(cov_matrix, w)), initial_weights, 
+                                    method='SLSQP', bounds=bounds, constraints=constraints_target)
                     if opt_min.success:
                         frontier_vol.append(np.sqrt(opt_min.fun))
                     else:
@@ -526,18 +547,26 @@ else:
                     y=[ret_opt * 100],
                     mode='markers',
                     name="Portafolio Óptimo",
-                    marker=dict(color='red', size=10)
+                    marker=dict(color='red', size=12)
                 ))
-                fig_front.update_layout(title="Frontera Eficiente del Portafolio",
-                                        xaxis_title="Volatilidad (%)",
-                                        yaxis_title="Retorno Esperado (%)")
+                fig_front.update_layout(
+                    title="Frontera Eficiente del Portafolio",
+                    xaxis_title="Volatilidad (%)",
+                    yaxis_title="Retorno Esperado (%)",
+                    template="plotly_white"
+                )
                 st.plotly_chart(fig_front, use_container_width=True)
             else:
                 st.error("La optimización no fue exitosa. Intente modificar los parámetros.")
 
+                
 
 # ---------------------------------------------------------
 # TAB 4: SIMULACIÓN MONTE CARLO
+# ---------------------------------------------------------
+
+
+
 with tab4: 
         st.header("Parámetros de la Simulación")
 
