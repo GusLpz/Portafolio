@@ -15,7 +15,7 @@ st.set_page_config(page_title="holis holis", page_icon="📈", layout="wide")
 st.sidebar.title("Analizador de Portafolios de Inversion")
 
 # Creamos pestañas para la aplicacion
-tab1, tab2, tab3, tab4 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio", "Optimizacion Markowitz","Simulación Monte Carlo"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Analisis individual del Activo", "Analisis de Portafolio", "Optimizacion Markowitz","Optimización Black-Litterman","Simulación Monte Carlo"])
 
 # Entrada de simbolos y pesos 
 simbolos = st.sidebar.text_input("Ingrese los simbolos de las acciones (separados por comas)", "AAPL, MSFT, GOOG, AMZN, NVDA")
@@ -559,15 +559,161 @@ else:
             else:
                 st.error("La optimización no fue exitosa. Intente modificar los parámetros.")
 
-                
+
 
 # ---------------------------------------------------------
-# TAB 4: SIMULACIÓN MONTE CARLO
+# TAB 4: OPTIMIZACIÓN BLACK-LITTERMAN
+# ---------------------------------------------------------
+
+with tab4:
+    st.header("Optimización Black-Litterman")
+
+    if len(simbolos) < 2:
+        st.error("Se requiere al menos dos activos para la optimización.")
+    else:
+        # 1. Cálculo de la matriz de covarianza y rendimientos de equilibrio implícitos
+        cov_matrix = returns[simbolos].cov()
+        delta = st.number_input("Coeficiente de aversión al riesgo (δ)", value=2.5, step=0.1)
+        tau = st.number_input("τ (tau)", value=0.05, step=0.01)
+        # Supongamos que los pesos de mercado sean los mismos que los ingresados (estos deben ser representativos)
+        w_m = np.array(pesos)
+        pi = delta * np.dot(cov_matrix, w_m)
+        
+        st.subheader("Retornos de Equilibrio Implícitos (π)")
+        st.dataframe(pd.DataFrame(pi, index=simbolos, columns=["π (Implícito)"]))
+        
+        # 2. Definir las opiniones del inversor (Views)
+        st.subheader("Opiniones del Inversor")
+        view_count = st.number_input("Número de vistas", min_value=1, max_value=len(simbolos), value=1, step=1)
+        
+        P_list = []
+        Q_list = []
+        for i in range(int(view_count)):
+            st.markdown(f"**Vista {i+1}:**")
+            activo_vista = st.selectbox(f"Selecciona el activo para la vista {i+1}", simbolos, key=f"vista_activo_{i}")
+            q_val = st.number_input(
+                f"Rendimiento esperado para {activo_vista} (en decimal, ej. 0.01 para 1%)",
+                value=0.01, step=0.001, key=f"vista_q_{i}"
+            )
+            # Para este ejemplo se asume una vista sobre un solo activo: P tendrá 1 en la posición del activo y 0 en el resto
+            P_row = [0] * len(simbolos)
+            P_row[simbolos.index(activo_vista)] = 1
+            P_list.append(P_row)
+            Q_list.append(q_val)
+        
+        P = np.array(P_list)
+        Q = np.array(Q_list)
+        
+        # 3. Matriz de incertidumbre Ω para las vistas:
+        # Usamos una aproximación simple: Ω = diagonal de (τ * P Σ P^T)
+        Omega = np.diag(np.diag(tau * np.dot(np.dot(P, cov_matrix), P.T)))
+        st.subheader("Matriz de Incertidumbre (Ω)")
+        st.write(Omega)
+        
+        # 4. Cálculo de los rendimientos ajustados por Black-Litterman:
+        # Fórmula: μ = [ (τΣ)^(-1) + P^T Ω^(-1) P ]^(-1) [ (τΣ)^(-1) π + P^T Ω^(-1) Q ]
+        inv_tauSigma = np.linalg.inv(tau * cov_matrix)
+        inv_Omega = np.linalg.inv(Omega)
+        middle_term = np.linalg.inv(inv_tauSigma + np.dot(np.dot(P.T, inv_Omega), P))
+        adjusted_returns = np.dot(middle_term, (np.dot(inv_tauSigma, pi) + np.dot(np.dot(P.T, inv_Omega), Q)))
+        
+        st.subheader("Rendimientos Ajustados (Black-Litterman)")
+        st.dataframe(pd.DataFrame(adjusted_returns, index=simbolos, columns=["Rendimiento Ajustado"]))
+        
+        # 5. Optimización del portafolio usando los rendimientos ajustados
+        opt_type_bl = st.selectbox("Tipo de optimización", ["Minimizar Varianza", "Maximizar Sharpe Ratio"], key="opt_bl")
+        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        bounds = tuple((0, 1) for _ in range(len(simbolos)))
+        initial_weights = np.array(len(simbolos) * [1. / len(simbolos)])
+        
+        def portfolio_performance(weights, mean_returns, cov_matrix):
+            ret = np.dot(weights, mean_returns)
+            vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+            return ret, vol
+        
+        if opt_type_bl == "Minimizar Varianza":
+            def portfolio_variance(weights):
+                return np.dot(weights.T, np.dot(cov_matrix, weights))
+            opt_bl = minimize(portfolio_variance, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+        else:
+            def portfolio_neg_sharpe(weights):
+                ret, vol = portfolio_performance(weights, adjusted_returns, cov_matrix)
+                return -(ret - risk_free_rate) / vol
+            opt_bl = minimize(portfolio_neg_sharpe, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+        
+        if opt_bl.success:
+            opt_weights = opt_bl.x
+            ret_bl, vol_bl = portfolio_performance(opt_weights, adjusted_returns, cov_matrix)
+            sharpe_bl = (ret_bl - risk_free_rate) / vol_bl
+            # Cálculo de la beta del portafolio con los pesos optimizados
+            portfolio_returns_bl = returns[simbolos].dot(opt_weights)
+            benchmark_returns = returns[benchmark_options[selected_benchmark]]
+            beta_bl = np.cov(portfolio_returns_bl, benchmark_returns)[0, 1] / np.var(benchmark_returns)
+            
+            st.subheader("Resultados de la Optimización Black-Litterman")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Retorno Esperado", f"{ret_bl*100:.2f}%")
+            col2.metric("Volatilidad", f"{vol_bl*100:.2f}%")
+            col3.metric("Ratio Sharpe", f"{sharpe_bl:.2f}")
+            col4.metric("Beta Portafolio", f"{beta_bl:.2f}")
+            
+            st.subheader("Pesos Óptimos")
+            weights_bl_df = pd.DataFrame({"Activo": simbolos, "Peso Óptimo": opt_weights})
+            st.dataframe(weights_bl_df.set_index("Activo"))
+            
+            # 6. Frontera Eficiente (Black-Litterman)
+            st.subheader("Frontera Eficiente - Black-Litterman")
+            target_returns = np.linspace(adjusted_returns.min(), adjusted_returns.max(), 50)
+            frontier_vol = []
+            for target in target_returns:
+                constraints_target = (
+                    {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+                    {'type': 'eq', 'fun': lambda x, target=target: np.dot(x, adjusted_returns) - target}
+                )
+                opt_min = minimize(lambda w: np.dot(w.T, np.dot(cov_matrix, w)), initial_weights,
+                                   method='SLSQP', bounds=bounds, constraints=constraints_target)
+                if opt_min.success:
+                    frontier_vol.append(np.sqrt(opt_min.fun))
+                else:
+                    frontier_vol.append(np.nan)
+            
+            fig_bl = go.Figure()
+            fig_bl.add_trace(go.Scatter(
+                x=np.array(frontier_vol) * 100,
+                y=target_returns * 100,
+                mode='lines',
+                name="Frontera Eficiente"
+            ))
+            fig_bl.add_trace(go.Scatter(
+                x=[vol_bl * 100],
+                y=[ret_bl * 100],
+                mode='markers',
+                name="Portafolio Óptimo",
+                marker=dict(color='red', size=12)
+            ))
+            fig_bl.update_layout(
+                title="Frontera Eficiente - Black-Litterman",
+                xaxis_title="Volatilidad (%)",
+                yaxis_title="Retorno Esperado (%)",
+                template="plotly_white"
+            )
+            st.plotly_chart(fig_bl, use_container_width=True)
+        else:
+            st.error("La optimización Black-Litterman no fue exitosa. Intente modificar los parámetros.")
+
+
+
+
+
+
+
+# ---------------------------------------------------------
+# TAB 5: SIMULACIÓN MONTE CARLO
 # ---------------------------------------------------------
 
 
 
-with tab4: 
+with tab5: 
         st.header("Parámetros de la Simulación")
 
         # Entrada de parámetros
